@@ -1,58 +1,110 @@
-﻿using System;
+﻿using Rug.Osc;
+using System;
+using System.Collections.Generic;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using UnityEngine;
+using static Babble.BabbleExpressions;
 
-namespace Babble
+public class BabbleOSC
 {
-    // Copied from OscMessage https://github.com/benaclejames/VRCFaceTracking/blob/master/VRCFaceTracking/OSC/OSCMessage.cs
-    internal class BabbleOSC
+    public Dictionary<string, float> MouthShapes { get; private set; }
+
+    private OscReceiver _receiver;
+
+    private bool _loop = true;
+
+    private readonly Thread _thread;
+
+    private readonly int _resolvedPort;
+
+    private readonly IPAddress _resolvedHost;
+
+    public const string DEFAULT_HOST = "127.0.0.1";
+
+    public const int DEFAULT_PORT = 8888;
+
+    private const int TIMEOUT_MS = 10000;
+
+    public BabbleOSC(string? host = null, int? port = null)
     {
-        public OscMessage message { get; private set; }
+        if (_receiver != null)
+        {
+            Debug.LogError("BabbleOSC connection already exists.");
+            return;
+        }
 
-        private static readonly Socket ReceiverClient = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        private static Thread _receiveThread;
+        _resolvedHost = IPAddress.Parse(host ?? DEFAULT_HOST);
+        _resolvedPort = port ?? DEFAULT_PORT;
 
-        public BabbleOSC(string address, int inPort)
+        MouthShapes = new Dictionary<string, float>();
+        for (int i = 0; i < ExpressionToAddress.Length; i++)
+        {
+            MouthShapes.Add(ExpressionToAddress[i], 0f);
+        }
+
+        Debug.Log($"Started BabbleOSC with Host: {_resolvedHost} and Port {_resolvedPort}");
+        ConfigureReceiver();
+        _loop = true;
+        _thread = new Thread(new ThreadStart(ListenLoop));
+        _thread.Start();
+    }
+
+    private void ConfigureReceiver()
+    {
+        // Create the OSC receiver with specified host and port
+        _receiver = new OscReceiver(_resolvedHost, _resolvedPort);
+        _receiver.Connect();
+    }
+
+    private void ListenLoop()
+    {
+        while (_loop)
         {
             try
             {
-                ReceiverClient.Bind(new IPEndPoint(IPAddress.Parse(address), inPort));
-                ReceiverClient.ReceiveTimeout = 1000;
-
-                _receiveThread = new Thread(() =>
+                if (_receiver.State == OscSocketState.Connected)
                 {
-                    Recv();
-                    Thread.Sleep(10);
-                });
-                _receiveThread.Start();
+                    // Check for a new OSC message
+                    if (_receiver.TryReceive(out OscPacket packet))
+                    {
+                        if (packet is OscMessage oscMessage && oscMessage.Count > 0 && oscMessage[0] is float value)
+                        {
+                            ProcessMessage(oscMessage, value);
+                        }
+                    }
+                }
+                else
+                {
+                    _receiver.Close();
+                    ConfigureReceiver();
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Debug.LogError("Failed to bind to OSC receiver.");
+                Debug.LogError($"OSC Listener Error: {ex.Message}");
             }
+        }
+    }
+
+    private void ProcessMessage(OscMessage oscMessage, float value)
+    {
+        if (oscMessage.Address == "/mouthFunnel" || oscMessage.Address == "/mouthPucker")
+        {
+            MouthShapes[oscMessage.Address] = value * 4f;
         }
 
-        private void Recv()
+        var trimmed = oscMessage.Address.TrimStart('/');
+        if (MouthShapes.ContainsKey(trimmed))
         {
-            byte[] buffer = new byte[2048];
-            try
-            {
-                ReceiverClient.Receive(buffer, buffer.Length, SocketFlags.None);
-                message = new OscMessage(buffer);
-            }
-            catch (SocketException)
-            {
-                // Ignore as this is most likely a timeout exception
-                message = null;
-            }
+            MouthShapes[trimmed] = value;
         }
+    }
 
-        public void Teardown()
-        {
-            ReceiverClient.Close();
-            ReceiverClient.Dispose();
-        }
+    public void Teardown()
+    {
+        _loop = false;
+        _receiver.Close();
+        _thread.Join();
     }
 }
