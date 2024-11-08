@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>Rug.Osc</id>
+        <version>1.2.5</version>
+        <title>Rug.Osc - Simple, complete, open source OSC implementation for .NET and Mono.</title>
+        <authors>RugCode</authors>
+        <owners>RugCode</owners>
+        <licenseUrl>https://bitbucket.org/rugcode/rug.osc/wiki/License</licenseUrl>
+        <projectUrl>https://bitbucket.org/rugcode/rug.osc/</projectUrl>
+        <iconUrl>https://bytebucket.org/rugcode/rug.osc/wiki/Images/rug.osc-logo.png</iconUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>Simple, complete, open source OSC implementation for .NET (2.0 and greater) and Mono. Message argument types supported are: int, long, float, double, string, symbol, bool, RGBA Color, Osc-Null, Osc-Timetag, Osc-Midi, impulse, char, blobs and arrays. Also boasts a full feature set including: Bundles, Sending/Receiving osc packets via UDP (IPv4, IPv6, Unicast, Multicast and IPv4 Broadcast) or Read/write osc packets via streams, message address patterns and pattern matching, as well as parseing osc messages and bundles from strings. Rug.Osc has been optimized for use in real-time applications and is 100% thread safe.</description>
+        <summary>Rug.Osc a simple, complete, open source Open Sound Control (OSC) implementation for .NET (2.0 or greater) and Mono.</summary>
+        <releaseNotes>For examples and demos see the project site.</releaseNotes>
+        <copyright>Copyright (C) 2013 Phill Tew</copyright>
+        <language>en-GB</language>
+        <tags>Osc, Open Source, UDP, Sound, Unity3D, Mono</tags>
+    </metadata>
+</package>
